@@ -1,14 +1,248 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  OWNER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model User {
+  id          Int           @id @default(autoincrement())
+  firstName   String        @map("first_name")
+  lastName    String        @map("last_name")
+  gender      Gender?
+  role        Role          @default(USER)
+  birthdate   DateTime?     @db.DateTime()
+  email       String
+  password    String
+  company     String?
+  phone       String?
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamp(0)
+  Hotels      Hotel[]
+  Bookings    Booking[]
+  Credits     Credit[]
+  Transaction Transaction[]
+  Reviews     Review[]
+
+  @@map("users")
+}
+
+model HotelImage {
+  id      Int    @id @default(autoincrement())
+  image   String
+  hotel   Hotel  @relation(fields: [hotelId], references: [id])
+  hotelId Int    @map("hotel_id")
+
+  @@map("hotel_image")
+}
+
+model Hotel {
+  id     Int    @id @default(autoincrement())
+  nameTh String @map("name_th")
+  nameEn String @map("name_en")
+
+  postCode String @db.VarChar(10)
+  lat      Float
+  lng      Float
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  User   User @relation(fields: [userId], references: [id])
+  userId Int  @map("user_id")
+
+  provinc    Province @relation(fields: [provinceId], references: [id])
+  provinceId Int      @map("province_id")
+
+  district   District @relation(fields: [districtId], references: [id])
+  districtId Int      @map("distric_id")
+
+  SubDistrict   SubDistrict @relation(fields: [subDistrictId], references: [id])
+  subDistrictId Int         @map("Sub_district")
+
+  HotelImages HotelImage[]
+
+  Rooms           Room[]
+  Hotelfacilities Hotelfacilitie[]
+  Reviews         Review[]
+
+  @@map("hotels")
+}
+
+model Province {
+  id     Int    @id @default(autoincrement())
+  nameTh String @map("name_th")
+  nameEn String @map("name_en")
+
+  Hotels   Hotel[]
+  District District[]
+
+  @@map("provinces")
+}
+
+model District {
+  id       Int      @id @default(autoincrement())
+  nameTh   String   @map("name_th")
+  nameEn   String   @map("name_en")
+  province Province @relation(fields: [provinceId], references: [id])
+
+  provinceId Int @map("province_id")
+
+  Hotels       Hotel[]
+  SubDistricts SubDistrict[]
+
+  @@map("districts")
+}
+
+model SubDistrict {
+  id     Int    @id @default(autoincrement())
+  nameTh String @map("name_th")
+  nameEn String @map("name_en")
+
+  district   District @relation(fields: [districtId], references: [id])
+  districtId Int      @map("district_id")
+  Hotels     Hotel[]
+
+  @@map("sub_district")
+}
+
+model roomImage {
+  id    Int    @id @default(autoincrement())
+  image String
+
+  room   Room @relation(fields: [roomId], references: [id])
+  roomId Int  @map("room_id")
+
+  @@map("room_image")
+}
+
+enum Bed {
+  KINGSIZE
+  QUEENSIZE
+}
+
+enum Status {
+  READY
+  CHECKIN
+  PENDING
+}
+
+model Room {
+  id         Int    @id @default(autoincrement())
+  bed        Bed
+  roomNumber String @map("room_number")
+  bedNumber  Bytes
+  status     Status @default(READY)
+  roomSize   Float  @map("room_size")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  hotel        Hotel         @relation(fields: [hotelId], references: [id])
+  hotelId      Int           @map("hotel_id")
+  roomImages   roomImage[]
+  Bookings     Booking[]
+  Transactions Transaction[]
+
+  @@map("rooms")
+}
+
+model Facilitie {
+  id              Int              @id @default(autoincrement())
+  name            String
+  hotelfacilities Hotelfacilitie[]
+
+  @@map("facilities")
+}
+
+model Hotelfacilitie {
+  id         Int       @id @default(autoincrement())
+  facilities Facilitie @relation(fields: [facilitiesId], references: [id])
+
+  facilitiesId Int   @map("facilities_id")
+  hotel        Hotel @relation(fields: [hotelId], references: [id])
+  hotelId      Int   @map("hotel_id")
+
+  @@map("hotelfacilities")
+}
+
+model Booking {
+  id           Int      @id @default(autoincrement())
+  totalPrice   Decimal  @map("total_price") @db.Decimal(10, 2)
+  checkIn      DateTime @map("check_in")
+  checkOut     DateTime @map("check_out")
+  isPaid       Boolean  @default(false) @map("is_paid")
+  guestsNumber Bytes    @map("guestNumber")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  user   User @relation(fields: [userId], references: [id])
+  room   Room @relation(fields: [roomId], references: [id])
+  roomId Int  @map("room_id")
+  userId Int  @map("user_id")
+
+  @@map("bookings")
+}
+
+model Credit {
+  id           Int           @id @default(autoincrement())
+  name         String
+  number       String
+  expireM      Int
+  expireY      Int
+  user         User          @relation(fields: [userId], references: [id])
+  userId       Int           @map("user_id")
+  Transactions Transaction[]
+
+  @@map("credits")
+}
+
+model Transaction {
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @map("user_id")
+
+  room   Room @relation(fields: [roomId], references: [id])
+  roomId Int  @map("room_id")
+
+  credit   Credit @relation(fields: [creditId], references: [id])
+  creditId Int    @map("credit_id")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@map("transactions")
+}
+
+model Review {
+  id Int @id @default(autoincrement())
+
+  employee    Int
+  facilities  Int
+  cleanliness Int
+  comfort     Int
+  value       Int
+  location    Int
+
+  hotel   Hotel @relation(fields: [hotelId], references: [id])
+  hotelId Int   @map("hotel_id")
+  user    User  @relation(fields: [userId], references: [id])
+  userId  Int   @map("user_id")
+
+  @@map("reviews")
 }

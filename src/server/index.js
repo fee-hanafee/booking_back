@@ -25,6 +25,6 @@ module.exports = function restApiServer(app) {
     res.send("<h1>Hello</h1>");
   });
 
-  app.use(errorMiddlewares);
   app.use(notFound);
+  app.use(errorMiddlewares);
 };
